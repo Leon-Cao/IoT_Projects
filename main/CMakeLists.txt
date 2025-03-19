@@ -8,13 +8,17 @@ set(srcs
 	"utils/utils.c"
 	"utils/misc.c"
 	"utils/peer.c"
-	"candy-lock.c" 
-	"blecent.c")
+	"iotGateway/cmd_iot_gateway.c"
+	"iotGateway/blecent.c"
+	"iotGateway/wifi_station.c"
+	"iotGateway/iot_gateway_main.c"
+	"iot_gateway.c")
 	
 set(public_include_dirs
 	"." 
 	"sesame" 
 	"utils"
+	"iotGateway"
 )
 	
 idf_component_register(SRCS "${srcs}"

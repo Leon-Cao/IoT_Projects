@@ -127,6 +127,13 @@ void talk_to_ssm(sesame * ssm, uint8_t parsing_type) {
     }
 }
 
+void ssm_action_handle(sesame * ssm) {
+    ESP_LOGI(TAG, "[ssm_action_handle][ssm status: %s]", SSM_STATUS_STR(ssm->device_status));
+    if (ssm->device_status == SSM_UNLOCKED) {
+        ssm_lock(NULL, 0);
+    }
+}
+
 void ssm_mem_deinit(void) {
     free(p_ssms_env);
 }

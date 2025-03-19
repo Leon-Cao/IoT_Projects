@@ -788,8 +788,7 @@ peer_init(int max_peers, int max_svcs, int max_chrs, int max_dscs)
     /* Free memory first in case this function gets called more than once. */
     peer_free_mem();
 
-    peer_mem = malloc(
-                   OS_MEMPOOL_BYTES(max_peers, sizeof (struct peer)));
+    peer_mem = malloc(OS_MEMPOOL_BYTES(max_peers, sizeof (struct peer)));
     if (peer_mem == NULL) {
         rc = BLE_HS_ENOMEM;
         goto err;

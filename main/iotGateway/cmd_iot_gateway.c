@@ -6,7 +6,6 @@
 #include "esp_console.h"
 #include "esp_system.h"
 #include "esp_log.h"
-#include "esp_console.h"
 #include "esp_vfs_dev.h"
 #include "esp_vfs_fat.h"
 #include "nvs.h"
@@ -18,21 +17,10 @@
 #define PROMPT_STR CONFIG_IDF_TARGET
 #define CONFIG_CONSOLE_MAX_COMMAND_LINE_LENGTH 1024
 
-
 /* Global Varibal */
-static const char * TAG = "main.c";
+static const char * TAG = "iotGateway-cmd.c";
 
-static void ssm_action_handle(sesame * ssm) {
-    ESP_LOGI(TAG, "[ssm_action_handle][ssm status: %s]", SSM_STATUS_STR(ssm->device_status));
-    if (ssm->device_status == SSM_UNLOCKED) {
-        ssm_lock(NULL, 0);
-    }
-/*    else if (ssm->device_status == SSM_LOCKED){
-    	ssm_unlock(NULL,0);
-	}*/
-	
-}
-
+/* Functions */
 static int ssm5_lock_cmd(int argc, char **argv){
 	ssm_lock(NULL,0);
     return ESP_OK;
@@ -69,7 +57,7 @@ static void ssm_register_console_cmd(void)
 }
 
 
-static void ssm_console_init(void)
+void iot_gateway_console_init(void)
 {
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
@@ -129,11 +117,3 @@ static void ssm_console_init(void)
     ESP_ERROR_CHECK(esp_console_start_repl(repl));
 }
 
-
-void app_main(void) {
-    ESP_LOGI(TAG, "SesameSDK_ESP32 [11/24][087]");
-    nvs_flash_init();
-	ssm_console_init();
-    ssm_init(ssm_action_handle);
-    esp_ble_init();
-}
