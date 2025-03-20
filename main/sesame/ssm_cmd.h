@@ -15,9 +15,9 @@ void send_login_cmd_to_ssm(sesame * ssm);
 
 void send_read_history_cmd_to_ssm(sesame * ssm);
 
-void ssm_lock(uint8_t * tag, uint8_t tag_length);
+void ssm_lock(uint8_t * tag, uint8_t tag_length, uint16_t conn_id); 
 
-void ssm_unlock(uint8_t * tag, uint8_t tag_length);
+void ssm_unlock(uint8_t * tag, uint8_t tag_length, uint16_t conn_id); 
 
 #ifdef __cplusplus
 }

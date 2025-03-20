@@ -4,6 +4,8 @@
 #include "nvs_flash.h"
 #include "ssm_cmd.h"
 #include "esp_console.h"
+#include "linenoise/linenoise.h"
+#include "argtable3/argtable3.h"
 #include "esp_system.h"
 #include "esp_log.h"
 #include "esp_vfs_dev.h"
@@ -17,27 +19,46 @@
 #define PROMPT_STR CONFIG_IDF_TARGET
 #define CONFIG_CONSOLE_MAX_COMMAND_LINE_LENGTH 1024
 
+static struct {
+    struct arg_int *conn_id;
+    struct arg_end *end;
+} ssm5_lock_args;
+
+
 /* Global Varibal */
 static const char * TAG = "iotGateway-cmd.c";
 
 /* Functions */
 static int ssm5_lock_cmd(int argc, char **argv){
-	ssm_lock(NULL,0);
-    return ESP_OK;
+    
+//    int nerrors = arg_parse(argc, argv, (void **) &sleep_args);
+//    if (nerrors != 0) {
+//        arg_print_errors(stderr, sleep_args.end, argv[0]);
+//        return 1;
+//    }
+
+//    if(argv[1] < SSM_MAX_NUM){
+	    ssm_lock(NULL,0, 0);
+        return ESP_OK;
+//    }
 }
 
 static int ssm5_unlock_cmd(int argc, char **argv){
-	ssm_unlock(NULL,0);
+	ssm_unlock(NULL,0,0);
     return ESP_OK;
 }
 
 static void ssm_register_console_cmd(void)
 {
+    ssm5_lock_args.conn_id = arg_int0("c", "conn_id", "<conn_id>", "ble connection id");
+    ssm5_lock_args.end = arg_end(2);
+
     const esp_console_cmd_t cmd = {
         .command = "ssm5_lock",
     	.help = "Lock ssm5",
         .hint = NULL,
         .func = ssm5_lock_cmd,
+        .argtable = &ssm5_lock_args,
 	};
 	
     if(ESP_OK != esp_console_cmd_register(&cmd)){

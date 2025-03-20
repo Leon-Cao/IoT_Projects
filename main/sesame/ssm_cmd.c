@@ -34,7 +34,12 @@ void handle_reg_data_from_ssm(sesame * ssm) {
     // ESP_LOG_BUFFER_HEX("deviceSecret", ssm->device_secret, 16);
     AES_CMAC(ssm->device_secret, (const unsigned char *) ssm->cipher.decrypt.random_code, 4, ssm->cipher.token);
     ssm->device_status = SSM_LOGGIN;
-    p_ssms_env->ssm_cb__(ssm); // callback: ssm_action_handle() in main.c
+
+    struct ssm_env_tag * p_ssmEnv = find_ssms_env_by_conn_id(ssm->conn_id);
+    if(NULL != p_ssmEnv){
+        p_ssmEnv->ssm_cb__(ssm); // callback: ssm_action_handle() in main.c
+        //p_ssms_env->ssm_cb__(ssm); // callback: ssm_action_handle() in main.c
+    }
 }
 
 void send_login_cmd_to_ssm(sesame * ssm) {
@@ -54,9 +59,16 @@ void send_read_history_cmd_to_ssm(sesame * ssm) {
     talk_to_ssm(ssm, SSM_SEG_PARSING_TYPE_CIPHERTEXT);
 }
 
-void ssm_lock(uint8_t * tag, uint8_t tag_length) {
+void ssm_lock(uint8_t * tag, uint8_t tag_length, uint16_t conn_id) {
     // ESP_LOGI(TAG, "[ssm][ssm_lock][%s]", SSM_STATUS_STR(p_ssms_env->ssm.device_status));
-    sesame * ssm = &p_ssms_env->ssm;
+    
+    struct ssm_env_tag * p_ssmEnv = find_ssms_env_by_conn_id(conn_id);
+    if(NULL == p_ssmEnv){
+        ESP_LOGI(TAG, "Error: [ssm][ssm_lock] conn_id wrong!");
+    }
+
+    //sesame * ssm = &p_ssms_env->ssm;
+    sesame * ssm = &p_ssmEnv->ssm;
     if (ssm->device_status >= SSM_LOGGIN) {
         if (tag_length == 0) {
             tag = tag_esp32;
@@ -70,9 +82,15 @@ void ssm_lock(uint8_t * tag, uint8_t tag_length) {
     }
 }
 
-void ssm_unlock(uint8_t * tag, uint8_t tag_length) {
+void ssm_unlock(uint8_t * tag, uint8_t tag_length, uint16_t conn_id) {
     // ESP_LOGI(TAG, "[ssm][ssm_unlock][%s]", SSM_STATUS_STR(p_ssms_env->ssm.device_status));
-    sesame * ssm = &p_ssms_env->ssm;
+    
+    struct ssm_env_tag * p_ssmEnv = find_ssms_env_by_conn_id(conn_id);
+    if(NULL == p_ssmEnv)
+        ESP_LOGI(TAG, "Error: [ssm][ssm_unlock]conn_id wrong!");
+
+    //sesame * ssm = &p_ssms_env->ssm;
+    sesame * ssm = &p_ssmEnv->ssm;
     if (ssm->device_status >= SSM_LOGGIN) {
         if (tag_length == 0) {
             tag = tag_esp32;

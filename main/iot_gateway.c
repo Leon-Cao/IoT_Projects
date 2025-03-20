@@ -39,7 +39,7 @@ void app_main(void) {
 
     //Init Candy house Sesame
     ESP_LOGI(TAG, "initial ssm!");
-    ssm_init(ssm_action_handle);
+    ssm_init(SSM_MAX_NUM, ssm_action_handle);
 
     //Init Ble Central Host
     ESP_LOGI(TAG, "initial ble host!");

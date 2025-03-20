@@ -40,11 +40,11 @@ static esp_err_t iot_gateway_operation_message_processing(void* message, int msg
             g_oper_msg->iot_device_actions[1],g_oper_msg->iot_device_actions[2],g_oper_msg->iot_device_actions[3]);
         if(SESAME_5_ACTION_LOCK_ENUM == g_oper_msg->iot_device_actions[0])
         {
-            ssm_lock(NULL,0);
+            ssm_lock(NULL,0,0);
         }
         else if(SESAME_5_ACTION_UNLOCK_ENUM == g_oper_msg->iot_device_actions[0])
         {
-            ssm_unlock(NULL,0);
+            ssm_unlock(NULL,0,0);
         }
     }
 

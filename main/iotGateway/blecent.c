@@ -52,6 +52,8 @@ static int ble_gap_event_connect_handle(struct ble_gap_event * event) {
         return ESP_FAIL;
     }
     static struct ble_gap_conn_desc desc;
+    struct ssm_env_tag * p_ssmsEnv;
+    
     int rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
     assert(rc == 0);
     print_conn_desc(&desc);
@@ -60,9 +62,16 @@ static int ble_gap_event_connect_handle(struct ble_gap_event * event) {
         ESP_LOGE(TAG, "Failed to add peer; rc=%d\n", rc);
         return ESP_FAIL;
     }
-    p_ssms_env->ssm.device_status = SSM_CONNECTED;        // set the device status
-    p_ssms_env->ssm.conn_id = event->connect.conn_handle; // save the connection handle
-    ESP_LOGW(TAG, "Connect SSM success handle=%d", p_ssms_env->ssm.conn_id);
+    
+    //add ssm device
+    p_ssmsEnv = find_free_ssms_env();
+    if(p_ssmsEnv == NULL){
+        peer_delete(event->connect.conn_handle);
+        return ESP_FAIL;
+    }        
+    p_ssmsEnv->ssm.device_status = SSM_CONNECTED;        // set the device status
+    p_ssmsEnv->ssm.conn_id = event->connect.conn_handle; // save the connection handle
+    ESP_LOGW(TAG, "Connect SSM success handle=%d", p_ssmsEnv->ssm.conn_id);
     rc = peer_disc_all(event->connect.conn_handle, service_disc_complete, NULL);
     if (rc != 0) {
         ESP_LOGE(TAG, "Failed to discover services; rc=%d\n", rc);
@@ -71,10 +80,18 @@ static int ble_gap_event_connect_handle(struct ble_gap_event * event) {
     return ESP_OK;
 }
 
-static void reconnect_ssm(void) {
+static void reconnect_ssm(uint16_t conn_handle) {
     ble_addr_t addr;
+    struct ssm_env_tag * p_ssmsEnv;
+    
+    p_ssmsEnv = find_ssms_env_by_conn_id(conn_handle);
+    if(NULL == p_ssmsEnv){
+        ESP_LOGE(TAG, "Error: can't find conn_handle = %d\n", conn_handle);
+        return;
+    }
+    
     addr.type = BLE_ADDR_RANDOM;
-    memcpy(addr.val, p_ssms_env->ssm.addr, 6);
+    memcpy(addr.val, p_ssmsEnv->ssm.addr, 6);
     int rc = ble_gap_connect(BLE_OWN_ADDR_PUBLIC, &addr, 30000, NULL, ble_gap_connect_event, NULL);
     if (rc != 0) {
         ESP_LOGE(TAG, "Error: Failed to connect to device; rc=%d\n", rc);
@@ -83,6 +100,7 @@ static void reconnect_ssm(void) {
 }
 
 static int ble_gap_connect_event(struct ble_gap_event * event, void * arg) {
+    
     // ESP_LOGI(TAG, "[ble_gap_connect_event: %d]", event->type);
     switch (event->type) {
     case BLE_GAP_EVENT_CONNECT:
@@ -92,7 +110,7 @@ static int ble_gap_connect_event(struct ble_gap_event * event, void * arg) {
         ESP_LOGW(TAG, "disconnect; reason=%d ", event->disconnect.reason);
         print_conn_desc(&event->disconnect.conn);
         peer_delete(event->disconnect.conn.conn_handle);
-        reconnect_ssm();
+        reconnect_ssm(event->disconnect.conn.conn_handle);
         return ESP_OK;
 
     case BLE_GAP_EVENT_CONN_UPDATE_REQ:
@@ -103,7 +121,11 @@ static int ble_gap_connect_event(struct ble_gap_event * event, void * arg) {
         return ESP_OK;
 
     case BLE_GAP_EVENT_NOTIFY_RX:
-        ssm_ble_receiver(&p_ssms_env->ssm, event->notify_rx.om->om_data, event->notify_rx.om->om_len);
+        struct ssm_env_tag * p_ssmsEnv;
+        p_ssmsEnv = find_ssms_env_by_conn_id(event->notify_rx.conn_handle);
+        if(NULL != p_ssmsEnv){
+            ssm_ble_receiver(&p_ssmsEnv->ssm, event->notify_rx.om->om_data, event->notify_rx.om->om_len);
+        }
         return ESP_OK;
 
     default:
@@ -119,10 +141,16 @@ static void ssm_scan_connect(const struct ble_hs_adv_fields * fields, void * dis
     if (fields->mfg_data_len >= 5 && fields->mfg_data[0] == 0x5A && fields->mfg_data[1] == 0x05) { // is SSM
         if (fields->mfg_data[4] == 0x00) {                            // unregistered SSM
             ESP_LOGW(TAG, "find unregistered SSM[%d]", fields->mfg_data[2]);
-            if (p_ssms_env->ssm.device_status == SSM_NOUSE) {
-                memcpy(p_ssms_env->ssm.addr, addr->val, 6);
-                p_ssms_env->ssm.device_status = SSM_DISCONNECTED;
-                p_ssms_env->ssm.conn_id = 0xFF;
+            struct ssm_env_tag * p_ssmsEnv = find_discnt_ssms_env_or_free(addr);
+            if(NULL == p_ssmsEnv){
+                ESP_LOGI(TAG, "No free SSM handle or disconnected SSM handle found!");
+                return;
+            }
+            //Leon: 此处可能存在问题，如重连行为。
+            if (p_ssmsEnv->ssm.device_status == SSM_NOUSE) {
+                memcpy(p_ssmsEnv->ssm.addr, addr->val, 6);
+                p_ssmsEnv->ssm.device_status = SSM_DISCONNECTED;
+                p_ssmsEnv->ssm.conn_id = 0xFF;
             }
         } else { // registered SSM
             ESP_LOGI(TAG, "find registered SSM[%d]", fields->mfg_data[2]);

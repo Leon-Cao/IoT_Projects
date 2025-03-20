@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "nimble/ble.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,7 +62,7 @@ struct ssm_env_tag {
 
 #pragma pack()
 
-extern struct ssm_env_tag * p_ssms_env;
+extern struct ssm_env_tag * p_ssms_env[];
 
 void ssm_ble_receiver(sesame * ssm, const uint8_t * p_data, uint16_t len);
 
@@ -69,9 +70,16 @@ void talk_to_ssm(sesame * ssm, uint8_t parsing_type);
 
 void ssm_action_handle(sesame * ssm);
 
+struct ssm_env_tag * find_free_ssms_env();
+
+struct ssm_env_tag * find_ssms_env_by_conn_id(uint16_t conn_id);
+
+struct ssm_env_tag * find_discnt_ssms_env_or_free(ble_addr_t * addr);
+
 void ssm_mem_deinit(void);
 
-void ssm_init(ssm_action ssm_action_cb);
+void ssm_init(int max_peers, ssm_action ssm_action_cb);
+
 
 #ifdef __cplusplus
 }
